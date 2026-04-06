@@ -119,8 +119,8 @@ def start_scheduler() -> BackgroundScheduler:
 
     # 每天固定排程
     scheduler.add_job(send_morning, 'cron', hour=10, minute=0)
-    scheduler.add_job(send_noon_therapy, 'cron', hour=23, minute=57)
-    scheduler.add_job(send_checkin, 'cron', hour=23, minute=0)
+    scheduler.add_job(send_noon_therapy, 'cron', hour=16, minute=30)
+    scheduler.add_job(send_checkin, 'cron', hour=16, minute=40)
 
     # 每週一、四：倒數提醒
     scheduler.add_job(send_discharge_countdown, 'cron', day_of_week='mon,thu', hour=20, minute=0)

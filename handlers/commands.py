@@ -101,7 +101,7 @@ def handle_command(text: str) -> str | None:
         if weekend_days == 0:
             weekend_line = "今天是週末，回家休息了！"
         else:
-            weekend_line = f"📅 下次放假再 {weekend_days} 天"
+            weekend_line = f"📅 再 {weekend_days} 天就放假了喔"
         return (
             f"🪖 新訓中\n\n"
             f"距離下部隊還有 {days_to_unit} 天\n"
