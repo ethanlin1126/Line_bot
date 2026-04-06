@@ -51,6 +51,11 @@ def reply(reply_token: str, response):
         )
 
 
+@app.route('/ping', methods=['GET'])
+def ping():
+    return 'pong', 200
+
+
 @app.route('/callback', methods=['POST'])
 def callback():
     signature = request.headers.get('X-Line-Signature', '')

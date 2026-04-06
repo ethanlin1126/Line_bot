@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv('LINE_CHANNEL_ACCESS_TOKEN')
+RENDER_URL = os.getenv('RENDER_URL', '')
 USER_ID = os.getenv('USER_ID')
 DISCHARGE_DATE_STR = os.getenv('DISCHARGE_DATE', '2026-07-24')
 
@@ -114,6 +115,15 @@ def send_letter():
     push_message(f"✉️\n\n{letter}")
 
 
+def keep_alive():
+    if RENDER_URL:
+        try:
+            requests.get(f'{RENDER_URL}/ping', timeout=10)
+            print('[keep_alive] pinged')
+        except Exception as e:
+            print(f'[keep_alive] error: {e}')
+
+
 def start_scheduler() -> BackgroundScheduler:
     scheduler = BackgroundScheduler(timezone='Asia/Taipei')
 
@@ -130,6 +140,9 @@ def start_scheduler() -> BackgroundScheduler:
 
     # 每週二、五：寄一封信
     scheduler.add_job(send_letter, 'cron', day_of_week='tue,fri', hour=22, minute=0)
+
+    # 每 10 分鐘 ping 自己，防止 Render 休眠
+    scheduler.add_job(keep_alive, 'interval', minutes=10)
 
     scheduler.start()
     print('[scheduler] 排程已啟動')
