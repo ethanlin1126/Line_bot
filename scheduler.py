@@ -2,7 +2,6 @@ import os
 import random
 import json
 import requests
-from datetime import date
 from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
 
@@ -102,12 +101,8 @@ def send_random_no_effort():
 
 
 def send_discharge_countdown():
-    y, m, d = DISCHARGE_DATE_STR.split('-')
-    days = (date(int(y), int(m), int(d)) - date.today()).days
-    if days > 0:
-        push_message(
-            f"今天的倒數 🗓️\n\n還有 {days} 天。\n每一天都算數。"
-        )
+    from handlers.commands import build_countdown_message
+    push_message(build_countdown_message())
 
 
 def send_letter():
@@ -128,9 +123,9 @@ def start_scheduler() -> BackgroundScheduler:
     scheduler = BackgroundScheduler(timezone='Asia/Taipei')
 
     # 每天固定排程
-    scheduler.add_job(send_morning, 'cron', hour=18, minute=0)
-    scheduler.add_job(send_noon_therapy, 'cron', hour=17, minute=51)
-    scheduler.add_job(send_checkin, 'cron', hour=17, minute=55)
+    scheduler.add_job(send_morning, 'cron', hour=10, minute=0)
+    scheduler.add_job(send_noon_therapy, 'cron', hour=16, minute=0)
+    scheduler.add_job(send_checkin, 'cron', hour=23, minute=59)
 
     # 每週一、四：倒數提醒
     scheduler.add_job(send_discharge_countdown, 'cron', day_of_week='mon,thu', hour=20, minute=0)

@@ -11,6 +11,9 @@ from linebot.v3.messaging import (
     ReplyMessageRequest,
     TextMessage,
     ImageMessage,
+    QuickReply,
+    QuickReplyItem,
+    MessageAction,
 )
 from linebot.v3.webhooks import MessageEvent, TextMessageContent
 from dotenv import load_dotenv
@@ -42,6 +45,17 @@ def reply(reply_token: str, response):
             ),
             TextMessage(type='text', text=response['text']),
         ]
+    elif isinstance(response, dict) and response.get('type') == 'quick_reply':
+        messages = [
+            TextMessage(
+                type='text',
+                text=response['text'],
+                quick_reply=QuickReply(items=[
+                    QuickReplyItem(action=MessageAction(label=opt, text=opt))
+                    for opt in response['options']
+                ]),
+            )
+        ]
     else:
         messages = [TextMessage(type='text', text=response)]
 
@@ -70,9 +84,10 @@ def callback():
 @handler.add(MessageEvent, message=TextMessageContent)
 def handle_message(event: MessageEvent):
     text = event.message.text
+    user_id = event.source.user_id
 
     response = (
-        handle_food(text)
+        handle_food(text, user_id)
         or handle_command(text)
         or handle_mood(text)
         or random.choice(RESPONSES['default'])

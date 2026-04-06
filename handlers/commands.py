@@ -51,6 +51,40 @@ def _save_used_songs(used: list) -> None:
         json.dump(used, f, ensure_ascii=False)
 
 
+def build_countdown_message() -> str:
+    today = date.today()
+    unit_date = _parse_date(UNIT_DATE_STR)
+    discharge_date = _parse_date(DISCHARGE_DATE_STR)
+    days_to_unit = (unit_date - today).days
+    days_to_discharge = (discharge_date - today).days
+    weekend_days = _days_until_weekend()
+
+    if days_to_discharge == 0:
+        return "終於退伍了！準備出發澳洲！"
+
+    if days_to_unit <= 0:
+        if weekend_days == 0:
+            weekend_line = "今天是週末，回家休息了！"
+        else:
+            weekend_line = f"📅 再 {weekend_days} 天就週末了"
+        return (
+            f"🪖 下部隊中\n\n"
+            f"距離退伍還有 {days_to_discharge} 天 🗓️\n"
+            f"{weekend_line}"
+        )
+
+    if weekend_days == 0:
+        weekend_line = "今天是週末，回家休息了！"
+    else:
+        weekend_line = f"📅 再 {weekend_days} 天就放假了喔"
+    return (
+        f"🪖 新訓中\n\n"
+        f"距離下部隊還有 {days_to_unit} 天\n"
+        f"距離退伍還有 {days_to_discharge} 天 🗓️\n\n"
+        f"{weekend_line}"
+    )
+
+
 def handle_command(text: str) -> str | None:
     t = text.strip()
 
@@ -74,40 +108,7 @@ def handle_command(text: str) -> str | None:
     
     # --- 倒數 ---
     if any(kw in t for kw in ['還有幾天', '幾天', '倒數', '退伍', '回來', '什麼時候']):
-        today = date.today()
-        unit_date = _parse_date(UNIT_DATE_STR)
-        discharge_date = _parse_date(DISCHARGE_DATE_STR)
-        days_to_unit = (unit_date - today).days
-        days_to_discharge = (discharge_date - today).days
-        weekend_days = _days_until_weekend()
-
-        # 退伍當天
-        if days_to_discharge == 0:
-            return "終於退伍了！準備出發澳洲！"
-
-        # 下部隊後（服役中）
-        if days_to_unit <= 0:
-            if weekend_days == 0:
-                weekend_line = "今天是週末，回家休息了！"
-            else:
-                weekend_line = f"📅 再 {weekend_days} 天就週末了"
-            return (
-                f"🪖 下部隊中\n\n"
-                f"距離退伍還有 {days_to_discharge} 天 🗓️\n"
-                f"{weekend_line}"
-            )
-
-        # 新訓中
-        if weekend_days == 0:
-            weekend_line = "今天是週末，回家休息了！"
-        else:
-            weekend_line = f"📅 再 {weekend_days} 天就放假了喔"
-        return (
-            f"🪖 新訓中\n\n"
-            f"距離下部隊還有 {days_to_unit} 天\n"
-            f"距離退伍還有 {days_to_discharge} 天 🗓️\n\n"
-            f"{weekend_line}"
-        )
+        return build_countdown_message()
 
     
     # --- 如果你在 ---
