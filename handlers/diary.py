@@ -3,6 +3,8 @@ import os
 import re
 from datetime import datetime, timezone, timedelta
 
+from handlers.state import get_state, set_state, clear_state
+
 DB_PATH = os.path.join(os.path.dirname(__file__), '..', 'db.sqlite')
 TZ_TAIPEI = timezone(timedelta(hours=8))
 
@@ -26,26 +28,32 @@ def save_diary(content: str) -> str:
     return f"記下來了 🌙\n\n「{content[:30]}{'...' if len(content) > 30 else ''}」\n\n我會好好保管的。"
 
 
-def handle_diary(text: str) -> str | None:
-    text = text.strip()
+def handle_diary(text: str, user_id: str) -> str | None:
+    t = text.strip()
 
-    # 進入寫日記模式
-    if text == '日記':
-        return '__DIARY_MODE__'
+    # 正在等使用者輸入日記內容
+    if get_state(user_id) == 'DIARY_MODE':
+        clear_state(user_id)
+        return save_diary(t)
 
-    # 舊格式：日記：內容（仍支援）
-    m = DIARY_TRIGGER.match(text)
+    # Rich menu 觸發
+    if t == '我想跟你說...':
+        set_state(user_id, 'DIARY_MODE')
+        return "說吧，我在聽。\n（把想說的話傳給我，我會幫你記下來）"
+
+    # 格式：日記：內容
+    m = DIARY_TRIGGER.match(t)
     if m:
         return save_diary(m.group(1).strip())
 
     # 查看最近日記
-    if text in ['我的日記', '日記紀錄', '看日記']:
+    if t in ['我的日記', '日記紀錄', '看日記']:
         with _conn() as conn:
             rows = conn.execute(
                 'SELECT content, created_at FROM diary ORDER BY id DESC LIMIT 5'
             ).fetchall()
         if not rows:
-            return "還沒有日記。\n按「日記」開始記錄 🌙"
+            return "還沒有日記。\n按「我想跟你說...」開始記錄 🌙"
         lines = ['最近的日記 🌙\n']
         for content, created_at in rows:
             time_str = created_at[:16].replace('T', ' ') if created_at else ''

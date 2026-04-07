@@ -8,6 +8,10 @@ with open(os.path.join(DATA_DIR, 'responses.json'), 'r', encoding='utf-8') as f:
     RESPONSES = json.load(f)
 
 
+TIRED_KEYWORDS = RESPONSES['mood_keywords']['tired']['keywords']
+TIRED_RESPONSES = RESPONSES['mood_keywords']['tired']['responses']
+
+
 def handle_mood(text: str) -> str | None:
     text = text.strip()
 
@@ -19,6 +23,9 @@ def handle_mood(text: str) -> str | None:
                 score_reply = random.choice(pool)
                 goodnight = random.choice(RESPONSES['night'])
                 return f"{score_reply}\n\n{goodnight}"
+
+    if any(kw in text for kw in TIRED_KEYWORDS):
+        return random.choice(TIRED_RESPONSES)
 
     return None
 

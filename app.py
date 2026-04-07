@@ -89,7 +89,7 @@ def handle_message(event: MessageEvent):
 
     response = (
         handle_food(text, user_id)
-        or handle_diary(text)
+        or handle_diary(text, user_id)
         or handle_command(text)
         or handle_mood(text)
         or random.choice(RESPONSES['default'])
