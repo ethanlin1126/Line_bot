@@ -21,6 +21,7 @@ from dotenv import load_dotenv
 from handlers.mood import handle_mood
 from handlers.commands import handle_command
 from handlers.food import handle_food
+from handlers.diary import handle_diary
 from scheduler import start_scheduler
 
 load_dotenv()
@@ -88,6 +89,7 @@ def handle_message(event: MessageEvent):
 
     response = (
         handle_food(text, user_id)
+        or handle_diary(text)
         or handle_command(text)
         or handle_mood(text)
         or random.choice(RESPONSES['default'])

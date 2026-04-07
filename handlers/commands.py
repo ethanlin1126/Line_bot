@@ -9,14 +9,8 @@ load_dotenv()
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), '..', 'data')
 
-with open(os.path.join(DATA_DIR, 'responses.json'), 'r', encoding='utf-8') as f:
-    RESPONSES = json.load(f)
-
 with open(os.path.join(DATA_DIR, 'songs.json'), 'r', encoding='utf-8') as f:
     SONGS = json.load(f)
-
-with open(os.path.join(DATA_DIR, 'therapy.json'), 'r', encoding='utf-8') as f:
-    THERAPY = json.load(f)
 
 UNIT_DATE_STR = os.getenv('UNIT_DATE', '2026-06-05')
 DISCHARGE_DATE_STR = os.getenv('DISCHARGE_DATE', '2026-07-24')
@@ -109,22 +103,5 @@ def handle_command(text: str) -> str | None:
     # --- 倒數 ---
     if any(kw in t for kw in ['還有幾天', '幾天', '倒數', '退伍', '回來', '什麼時候']):
         return build_countdown_message()
-
-    
-    # --- 如果你在 ---
-    if any(kw in t for kw in ['如果你在', '如果我在', '你在的話']):
-        return random.choice(RESPONSES['if_i_were_there'])
-
-    # --- 今天不用努力 ---
-    if any(kw in t for kw in ['今天不用努力', '不用努力', '可以廢']):
-        return random.choice(RESPONSES['no_need_to_try'])
-
-    # --- 療癒提案 ---
-    if any(kw in t for kw in ['今天要幹嘛', '無聊', '給我一個提案', '療癒']):
-        return random.choice(THERAPY['proposals'])
-
-    # --- 休息一下 ---
-    if any(kw in t for kw in ['累了', '休息一下', '好累', '想休息']):
-        return random.choice(THERAPY['rest'])
 
     return None
