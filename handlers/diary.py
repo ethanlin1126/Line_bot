@@ -25,7 +25,7 @@ def save_diary(content: str) -> str:
     now = datetime.now(TZ_TAIPEI).strftime('%Y-%m-%d %H:%M')
     with _conn() as conn:
         conn.execute('INSERT INTO diary (content, created_at) VALUES (?, ?)', (content, now))
-    return f"記下來了 🌙\n\n「{content[:30]}{'...' if len(content) > 30 else ''}」\n\n我會好好保管的。"
+    return f"記下來了📝\n\n「{content[:30]}{'...' if len(content) > 30 else ''}」\n\n我假日會好好看完的~"
 
 
 def handle_diary(text: str, user_id: str) -> str | None:
@@ -39,7 +39,7 @@ def handle_diary(text: str, user_id: str) -> str | None:
     # Rich menu 觸發
     if t == '我想跟你說...':
         set_state(user_id, 'DIARY_MODE')
-        return "說吧，我在聽。\n（把想說的話傳給我，我會幫你記下來）"
+        return "發生什麼事了呢？跟我說我在聽\n（把想說的話傳給我，我會幫你記下來）"
 
     # 格式：日記：內容
     m = DIARY_TRIGGER.match(t)
@@ -57,7 +57,7 @@ def handle_diary(text: str, user_id: str) -> str | None:
         lines = ['最近的日記 🌙\n']
         for content, created_at in rows:
             time_str = created_at[:16].replace('T', ' ') if created_at else ''
-            lines.append(f"[{time_str}]\n{content[:50]}{'...' if len(content) > 50 else ''}\n")
+            lines.append(f"[{time_str}]\n{content}\n")
         return '\n'.join(lines)
 
     return None
