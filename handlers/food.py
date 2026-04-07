@@ -37,7 +37,8 @@ def handle_food(text: str, user_id: str) -> dict | str | None:
         if t in OPTION_TO_CATEGORY:
             clear_state(user_id)
             return _recommend(OPTION_TO_CATEGORY[t])
-        # 選了不認識的選項，忽略讓其他 handler 處理
+        # 不是有效選項，清掉 state 讓其他 handler 處理
+        clear_state(user_id)
         return None
 
     # 觸發關鍵字 → 問使用者狀態
