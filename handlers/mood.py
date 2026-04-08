@@ -30,9 +30,10 @@ def handle_mood(text: str) -> str | None:
     return None
 
 
-def checkin_prompt() -> str:
+def checkin_prompt(name: str = '') -> str:
+    prefix = f"{name} " if name else ''
     return (
-        "蔡蓁蓁 晚安🌙\n\n"
+        f"{prefix}晚安🌙\n\n"
         "今天的過得怎麼樣呢？\n"
         "（1分很低落 ～ 10分超開心）\n\n"
         "傳個數字給我～"

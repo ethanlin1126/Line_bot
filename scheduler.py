@@ -29,6 +29,9 @@ with open(os.path.join(DATA_DIR, 'therapy.json'), 'r', encoding='utf-8') as f:
 with open(os.path.join(DATA_DIR, 'memories.json'), 'r', encoding='utf-8') as f:
     MEMORIES = json.load(f)
 
+with open(os.path.join(DATA_DIR, 'names.json'), 'r', encoding='utf-8') as f:
+    NAMES = json.load(f)
+
 
 def push_message(text: str):
     if not USER_ID or USER_ID == 'your_line_user_id_here':
@@ -72,11 +75,14 @@ def push_memory_message(image_url: str, text: str):
     if resp.status_code != 200:
         print(f'[push_memory_message] error: {resp.status_code} {resp.text}')
 
+def _random_name() -> str:
+    return random.choice(NAMES)
+
 # 早上
 def send_morning():
     quote = random.choice(QUOTES['daily'])
     msg = random.choice(RESPONSES['morning'])
-    push_message(f"{msg}\n\n{quote}")
+    push_message(f"{_random_name()}{msg}\n\n{quote}")
 
 LAST_NOON_FILE = os.path.join(DATA_DIR, '.last_noon')
 
@@ -118,7 +124,7 @@ def send_noon_therapy():
 
 def send_checkin():
     from handlers.mood import checkin_prompt
-    push_message(checkin_prompt())
+    push_message(checkin_prompt(_random_name()))
 
 
 def send_random_no_effort():
