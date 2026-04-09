@@ -15,7 +15,7 @@ from linebot.v3.messaging import (
     QuickReplyItem,
     MessageAction,
 )
-from linebot.v3.webhooks import MessageEvent, TextMessageContent
+from linebot.v3.webhooks import MessageEvent, TextMessageContent, FollowEvent
 from dotenv import load_dotenv
 
 from handlers.mood import handle_mood
@@ -82,6 +82,18 @@ def callback():
     except InvalidSignatureError:
         abort(400)
     return 'OK'
+
+
+@handler.add(FollowEvent)
+def handle_follow(event: FollowEvent):
+    reply(event.reply_token, (
+        "哈囉蔡蓁蓁👋\n\n"
+        "林軒宇要去當兵了，但他不想讓你一個人。\n"
+        "所以他在出發前設定了這個機器人陪著你🫂\n\n"
+        "你可以跟我說說心情、問我要吃什麼、\n"
+        "或是把想跟林軒宇說的話記下來。\n\n"
+        "他回來之前，我都在這裡💜"
+    ))
 
 
 @handler.add(MessageEvent, message=TextMessageContent)
