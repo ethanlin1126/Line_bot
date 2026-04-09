@@ -1,16 +1,9 @@
-import json
-import random
 import os
 from datetime import date
 
 from dotenv import load_dotenv
 
 load_dotenv()
-
-DATA_DIR = os.path.join(os.path.dirname(__file__), '..', 'data')
-
-with open(os.path.join(DATA_DIR, 'songs.json'), 'r', encoding='utf-8') as f:
-    SONGS = json.load(f)
 
 UNIT_DATE_STR = os.getenv('UNIT_DATE', '2026-06-05')
 DISCHARGE_DATE_STR = os.getenv('DISCHARGE_DATE', '2026-07-24')
@@ -22,27 +15,11 @@ def _parse_date(s: str) -> date:
 
 
 def _days_until_weekend() -> int:
-    """返回距離下一個週六或週日的天數（今天是週末則為 0）"""
     today = date.today()
-    weekday = today.weekday()  # 0=Mon … 5=Sat, 6=Sun
+    weekday = today.weekday()
     if weekday >= 5:
         return 0
-    return 5 - weekday  # 距離週六幾天
-
-
-SONG_STATE_FILE = os.path.join(DATA_DIR, 'song_state.json')
-
-
-def _load_used_songs() -> list:
-    if os.path.exists(SONG_STATE_FILE):
-        with open(SONG_STATE_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    return []
-
-
-def _save_used_songs(used: list) -> None:
-    with open(SONG_STATE_FILE, 'w', encoding='utf-8') as f:
-        json.dump(used, f, ensure_ascii=False)
+    return 5 - weekday
 
 
 def build_countdown_message() -> str:
@@ -82,24 +59,6 @@ def build_countdown_message() -> str:
 def handle_command(text: str) -> str | None:
     t = text.strip()
 
-    # --- 音樂 ---
-    if any(kw in t for kw in ['音樂', '推薦歌', '聽什麼歌', '給我一首歌', '給我一首']):
-        used = _load_used_songs()
-        remaining = [s for s in SONGS if s['title'] not in used]
-        if not remaining:
-            _save_used_songs([])
-            return "歌單裡的歌都推薦過了！重新洗牌，下次再問我吧 🔁"
-        song = random.choice(remaining)
-        used.append(song['title'])
-        _save_used_songs(used)
-        msg = f"🎵 {song['title']} — {song['artist']}"
-        if song.get('note'):
-            msg += f"\n\n{song['note']}"
-        if song.get('spotify'):
-            msg += f"\n\n▶️ {song['spotify']}"
-        return msg
-
-    
     # --- 倒數 ---
     if any(kw in t for kw in ['還有幾天', '幾天', '倒數', '退伍', '回來', '什麼時候']):
         return build_countdown_message()

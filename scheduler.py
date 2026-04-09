@@ -1,5 +1,4 @@
 import os
-import random
 import json
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -10,28 +9,15 @@ load_dotenv()
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv('LINE_CHANNEL_ACCESS_TOKEN')
 RENDER_URL = os.getenv('RENDER_URL', '')
 USER_ID = os.getenv('USER_ID')
-DISCHARGE_DATE_STR = os.getenv('DISCHARGE_DATE', '2026-07-24')
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 
-with open(os.path.join(DATA_DIR, 'responses.json'), 'r', encoding='utf-8') as f:
-    RESPONSES = json.load(f)
+with open(os.path.join(DATA_DIR, 'schedule.json'), 'r', encoding='utf-8') as f:
+    SCHEDULE = json.load(f)
 
-with open(os.path.join(DATA_DIR, 'quotes.json'), 'r', encoding='utf-8') as f:
-    QUOTES = json.load(f)
 
-with open(os.path.join(DATA_DIR, 'songs.json'), 'r', encoding='utf-8') as f:
-    SONGS = json.load(f)
 
-with open(os.path.join(DATA_DIR, 'therapy.json'), 'r', encoding='utf-8') as f:
-    THERAPY = json.load(f)
-
-with open(os.path.join(DATA_DIR, 'memories.json'), 'r', encoding='utf-8') as f:
-    MEMORIES = json.load(f)
-
-with open(os.path.join(DATA_DIR, 'names.json'), 'r', encoding='utf-8') as f:
-    NAMES = json.load(f)
-
+# ── 推送函式 ──────────────────────────────────────────────
 
 def push_message(text: str):
     if not USER_ID or USER_ID == 'your_line_user_id_here':
@@ -53,7 +39,7 @@ def push_message(text: str):
 
 def push_memory_message(image_url: str, text: str):
     if not USER_ID or USER_ID == 'your_line_user_id_here':
-        print(f'[scheduler] USER_ID not set, skipping memory push')
+        print('[scheduler] USER_ID not set, skipping memory push')
         return
     url = 'https://api.line.me/v2/bot/message/push'
     headers = {
@@ -75,92 +61,14 @@ def push_memory_message(image_url: str, text: str):
     if resp.status_code != 200:
         print(f'[push_memory_message] error: {resp.status_code} {resp.text}')
 
-def _random_name() -> str:
-    return random.choice(NAMES)
 
-# 早上
-def send_morning():
-    quote = random.choice(QUOTES['daily'])
-    msg = random.choice(RESPONSES['morning'])
-    push_message(f"{_random_name()}{msg}\n\n{quote}")
-
-LAST_NOON_FILE = os.path.join(DATA_DIR, '.last_noon')
+# ── 訊息發送邏輯 ──────────────────────────────────────────
 
 
-def _get_last_noon() -> str:
-    try:
-        with open(LAST_NOON_FILE, 'r') as f:
-            return f.read().strip()
-    except FileNotFoundError:
-        return ''
-
-
-def _save_last_noon(choice: str):
-    with open(LAST_NOON_FILE, 'w') as f:
-        f.write(choice)
-
-
-# 中午
-def send_noon_therapy():
-    options = ['song', 'text', 'proposal']
-    last = _get_last_noon()
-    if last in options:
-        options.remove(last)
-    choice = random.choice(options)
-    _save_last_noon(choice)
-    if choice == 'song':
-        s = random.choice(SONGS)
-        text = f"午安 🎵\n\n今天推薦你一首歌：\n{s['title']} — {s['artist']}"
-        if s.get('note'):
-            text += f"\n\n{s['note']}"
-        if s.get('spotify'):
-            text += f"\n\n▶️ {s['spotify']}"
-        push_message(text)
-    elif choice == 'text':
-        push_message(f"午安 ☀️\n\n{random.choice(THERAPY['texts'])}")
-    else:
-        push_message(f"午安 🌿\n\n今天的小提案：\n{random.choice(THERAPY['proposals'])}")
-
-
-def send_checkin():
-    from handlers.mood import checkin_prompt
-    push_message(checkin_prompt(_random_name()))
-
-
-def send_random_no_effort():
-    push_message(random.choice(RESPONSES['no_need_to_try']))
-
-
-def send_discharge_countdown():
+def _send_countdown():
     from handlers.commands import build_countdown_message
     push_message(build_countdown_message())
 
-
-MEMORY_STATE_FILE = os.path.join(DATA_DIR, '.last_memory')
-
-
-def _get_last_memory() -> str:
-    try:
-        with open(MEMORY_STATE_FILE, 'r') as f:
-            return f.read().strip()
-    except FileNotFoundError:
-        return ''
-
-
-def _save_last_memory(image_id: str):
-    with open(MEMORY_STATE_FILE, 'w') as f:
-        f.write(image_id)
-
-
-def send_memory():
-    last = _get_last_memory()
-    remaining = [m for m in MEMORIES if m['image_id'] != last]
-    if not remaining:
-        remaining = MEMORIES
-    memory = random.choice(remaining)
-    _save_last_memory(memory['image_id'])
-    image_url = f"https://lh3.googleusercontent.com/d/{memory['image_id']}"
-    push_memory_message(image_url, memory['text'])
 
 
 def keep_alive():
@@ -171,23 +79,58 @@ def keep_alive():
         except Exception as e:
             print(f'[keep_alive] error: {e}')
 
-# 排程訊息
+
+# ── 排程分派 ──────────────────────────────────────────────
+
+def _make_job(job_config: dict):
+    """根據 schedule.json 的設定回傳對應的 job 函式。"""
+
+    # 直接指定文字
+    if 'text' in job_config:
+        text = job_config['text']
+        return lambda t=text: push_message(t)
+
+    job_type = job_config.get('type', '')
+
+    if job_type == 'memory':
+        if 'image_id' in job_config:
+            image_url = f"https://lh3.googleusercontent.com/d/{job_config['image_id']}"
+            text = job_config.get('text', '')
+            return lambda u=image_url, t=text: push_memory_message(u, t)
+        print(f'[scheduler] memory 缺少 image_id：{job_config}')
+        return None
+
+    if job_type == 'countdown':
+        return _send_countdown
+
+    print(f'[scheduler] 未知的 job 設定：{job_config}')
+    return None
+
+
+# ── 啟動排程 ──────────────────────────────────────────────
+
 def start_scheduler() -> BackgroundScheduler:
-    scheduler = BackgroundScheduler(timezone='Asia/Taipei')
+    from datetime import datetime
+    scheduler = BackgroundScheduler(timezone='Australia/Sydney')
 
-    # 每日
-    scheduler.add_job(send_morning, 'cron', hour=10, minute=0)
-    scheduler.add_job(send_noon_therapy, 'cron', hour=16, minute=0)
-    scheduler.add_job(send_checkin, 'cron', hour=0, minute=0)
+    for date_str, date_data in SCHEDULE['dates'].items():
+        date = datetime.strptime(date_str, '%Y-%m-%d')
 
-    # 每週一、四：倒數提醒
-    scheduler.add_job(send_discharge_countdown, 'cron', day_of_week='mon,thu', hour=20, minute=0)
+        for job_config in date_data['schedule']:
+            hour, minute = map(int, job_config['time'].split(':'))
+            fn = _make_job(job_config)
+            if fn is None:
+                continue
+            scheduler.add_job(
+                fn,
+                'cron',
+                year=date.year,
+                month=date.month,
+                day=date.day,
+                hour=hour,
+                minute=minute,
+            )
 
-    # 每週三：今天不用努力
-    scheduler.add_job(send_random_no_effort, 'cron', day_of_week='wed', hour=19, minute=0)
-
-    # 每週二、五：傳送回憶照片
-    scheduler.add_job(send_memory, 'cron', day_of_week='tue,fri', hour=22, minute=0)
 
     # 每 10 分鐘 ping 自己，防止 Render 休眠
     scheduler.add_job(keep_alive, 'interval', minutes=10)

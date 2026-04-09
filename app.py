@@ -37,7 +37,9 @@ with open(os.path.join(DATA_DIR, 'responses.json'), 'r', encoding='utf-8') as f:
 
 
 def reply(reply_token: str, response):
-    if isinstance(response, dict) and response.get('type') == 'memory':
+    if isinstance(response, list):
+        messages = [TextMessage(type='text', text=msg) for msg in response]
+    elif isinstance(response, dict) and response.get('type') == 'memory':
         messages = [
             ImageMessage(
                 type='image',
